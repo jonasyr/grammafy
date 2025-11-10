@@ -1,4 +1,18 @@
-"""routine modules initialiser"""
+"""LaTeX command handlers for grammafy.
+
+This module provides the command interpretation system and built-in handlers
+for common LaTeX commands. The interpret() function acts as a dispatcher,
+routing commands to appropriate handlers based on command name.
+"""
+
+import logging
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from grammafy import Environment
+
+logger = logging.getLogger(__name__)
 
 # ----------------------------------------
 # BUILT-IN FUNCTIONS
@@ -43,18 +57,50 @@ def _footnote(env) -> None:
 
 
 def _include(env) -> None:
-    r"""responds to \include command and adds the new env.source to the head of env.source. The included files need to be in the same folder"""
-    i = env.source.text.find("}")
-    include_path = env.source.text[1:i]
+    r"""Handle \include and \input commands for recursive file inclusion.
 
-    if include_path.endswith(".bbl"):  # skip bibliography files
+    Loads the specified file and pushes its content onto the source stack.
+    Automatically appends .tex extension if missing. Skips .bbl bibliography files.
+
+    Args:
+        env: Processing environment
+    """
+    i = env.source.text.find("}")
+    include_path_str = env.source.text[1:i]
+
+    # Skip bibliography files
+    if include_path_str.endswith(".bbl"):
+        logger.debug("Skipping bibliography file: %s", include_path_str)
         env.source.index += i + 1
-    else:
-        if not include_path.endswith(".tex"):  # if the extension is not present
-            include_path += ".tex"
-        with open(f"{env.folder_path}{include_path}", encoding="utf-8") as include_tex:
-            env.source.add(include_tex.read())
+        return
+
+    # Auto-append .tex extension
+    if not include_path_str.endswith(".tex"):
+        include_path_str += ".tex"
+
+    # Resolve path relative to current folder
+    include_path = env.folder_path / include_path_str
+
+    try:
+        # Check if file exists
+        if not include_path.exists():
+            logger.warning("Included file not found: %s", include_path)
+            env.source.root.index += i + 1
+            env.clean.add(f"[FILE NOT FOUND: {include_path_str}]")
+            return
+
+        # Load and push file content
+        with open(include_path, encoding="utf-8") as include_tex:
+            content = include_tex.read()
+            env.source.add(content)
+            logger.debug("Included file: %s (%d bytes)", include_path, len(content))
+
         env.source.root.index += i + 1
+
+    except IOError as e:
+        logger.error("Failed to read included file %s: %s", include_path, e)
+        env.source.root.index += i + 1
+        env.clean.add(f"[ERROR READING: {include_path_str}]")
 
 
 def _print_curly(env) -> None:

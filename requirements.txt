@@ -1,0 +1,8 @@
+# Grammafy Dependencies
+# Python >= 3.10 required
+
+# Cross-platform ncurses wrapper for terminal UI
+uni-curses>=1.5
+
+# Optional: for building standalone executables
+# pyinstaller>=5.0
