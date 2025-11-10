@@ -46,6 +46,12 @@ void_c = (
     # Layout commands - just remove
     "rule",
     "vfill",
+    # LaTeX dimensions - just remove
+    "textwidth",
+    "linewidth",
+    "textheight",
+    "pagewidth",
+    "pageheight",
 )
 
 
