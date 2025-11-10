@@ -53,7 +53,7 @@ def _footnote(env) -> None:
 
     # add the text in the footnote to the queue in parenthesis
     env.source.add("(FOOTNOTE: " + env.source.text[1 : i - 1] + ")")
-    env.source.root.index += i
+    env.source.head.root.index += i
 
 
 def _include(env) -> None:
@@ -85,7 +85,7 @@ def _include(env) -> None:
         # Check if file exists
         if not include_path.exists():
             logger.warning("Included file not found: %s", include_path)
-            env.source.root.index += i + 1
+            env.source.head.root.index += i + 1
             env.clean.add(f"[FILE NOT FOUND: {include_path_str}]")
             return
 
@@ -95,11 +95,11 @@ def _include(env) -> None:
             env.source.add(content)
             logger.debug("Included file: %s (%d bytes)", include_path, len(content))
 
-        env.source.root.index += i + 1
+        env.source.head.root.index += i + 1
 
     except IOError as e:
         logger.error("Failed to read included file %s: %s", include_path, e)
-        env.source.root.index += i + 1
+        env.source.head.root.index += i + 1
         env.clean.add(f"[ERROR READING: {include_path_str}]")
 
 

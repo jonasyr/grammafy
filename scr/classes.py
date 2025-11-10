@@ -139,10 +139,10 @@ class Node:
 
 
 class Source:
-    """Stack-based text source manager for recursive file inclusion.
+    r"""Stack-based text source manager for recursive file inclusion.
 
     This class maintains a stack of Node objects, allowing for recursive file inclusion
-    (\include, \input commands). The current node is accessed via the 'head' property,
+    (\\include, \\input commands). The current node is accessed via the 'head' property,
     and most operations are proxied to the head node for convenience.
 
     This enables natural handling of nested LaTeX files:
