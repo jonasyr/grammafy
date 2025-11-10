@@ -25,6 +25,17 @@ def _equation(env) -> None:
     env.source.move_index("\\end{" + env.command + "}")
 
 
+def _skip_optional_brackets(env) -> None:
+    """transparent environment that skips optional [] parameters"""
+    # Check for optional parameters: \begin{env}[options]
+    if env.source.text and env.source.text[0] == "[":
+        try:
+            env.source.move_index("]")
+        except ValueError:
+            # If no closing bracket found, just continue
+            pass
+
+
 # ----------------------------------------
 # VARIABLES
 # ----------------------------------------
@@ -37,12 +48,13 @@ dic_commands_c = {
     "thm": _thm,
     # Table environments - replace with [_]
     "tabularx": _equation,
+    # Transparent environments with optional parameters
+    "tcolorbox": _skip_optional_brackets,
 }
 
-# Transparent environments (preserve content)
+# Transparent environments (preserve content, no optional params)
 void_c = (
-    "quote",      # Quotation environment - preserve text
-    "tcolorbox",  # Colored box - preserve text
+    "quote",  # Quotation environment - preserve text
 )
 
 # TEMPLATE
