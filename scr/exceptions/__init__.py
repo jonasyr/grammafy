@@ -143,9 +143,16 @@ def _end(env) -> None:
 
 
 def _new_line(env) -> None:
-    """add a new line to env.clean"""
+    """add a new line to env.clean and skip optional spacing argument"""
     env.clean.add("\n")
     env.source.index += 1
+    # Check for optional spacing argument: \\[spacing]
+    if env.source.text and env.source.text[0] == "[":
+        try:
+            env.source.move_index("]")
+        except ValueError:
+            # If no closing bracket found, just continue
+            pass
 
 
 def _square_equation(env) -> None:
