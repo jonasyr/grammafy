@@ -1,4 +1,18 @@
-"""routine modules initialiser"""
+"""LaTeX command handlers for grammafy.
+
+This module provides the command interpretation system and built-in handlers
+for common LaTeX commands. The interpret() function acts as a dispatcher,
+routing commands to appropriate handlers based on command name.
+"""
+
+import logging
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from grammafy import Environment
+
+logger = logging.getLogger(__name__)
 
 # ----------------------------------------
 # BUILT-IN FUNCTIONS
@@ -39,22 +53,54 @@ def _footnote(env) -> None:
 
     # add the text in the footnote to the queue in parenthesis
     env.source.add("(FOOTNOTE: " + env.source.text[1 : i - 1] + ")")
-    env.source.root.index += i
+    env.source.head.root.index += i
 
 
 def _include(env) -> None:
-    r"""responds to \include command and adds the new env.source to the head of env.source. The included files need to be in the same folder"""
-    i = env.source.text.find("}")
-    include_path = env.source.text[1:i]
+    r"""Handle \include and \input commands for recursive file inclusion.
 
-    if include_path.endswith(".bbl"):  # skip bibliography files
+    Loads the specified file and pushes its content onto the source stack.
+    Automatically appends .tex extension if missing. Skips .bbl bibliography files.
+
+    Args:
+        env: Processing environment
+    """
+    i = env.source.text.find("}")
+    include_path_str = env.source.text[1:i]
+
+    # Skip bibliography files
+    if include_path_str.endswith(".bbl"):
+        logger.debug("Skipping bibliography file: %s", include_path_str)
         env.source.index += i + 1
-    else:
-        if not include_path.endswith(".tex"):  # if the extension is not present
-            include_path += ".tex"
-        with open(f"{env.folder_path}{include_path}", encoding="utf-8") as include_tex:
-            env.source.add(include_tex.read())
-        env.source.root.index += i + 1
+        return
+
+    # Auto-append .tex extension
+    if not include_path_str.endswith(".tex"):
+        include_path_str += ".tex"
+
+    # Resolve path relative to current folder
+    include_path = env.folder_path / include_path_str
+
+    try:
+        # Check if file exists
+        if not include_path.exists():
+            logger.warning("Included file not found: %s", include_path)
+            env.source.head.root.index += i + 1
+            env.clean.add(f"[FILE NOT FOUND: {include_path_str}]")
+            return
+
+        # Load and push file content
+        with open(include_path, encoding="utf-8") as include_tex:
+            content = include_tex.read()
+            env.source.add(content)
+            logger.debug("Included file: %s (%d bytes)", include_path, len(content))
+
+        env.source.head.root.index += i + 1
+
+    except IOError as e:
+        logger.error("Failed to read included file %s: %s", include_path, e)
+        env.source.head.root.index += i + 1
+        env.clean.add(f"[ERROR READING: {include_path_str}]")
 
 
 def _print_curly(env) -> None:
@@ -97,9 +143,16 @@ def _end(env) -> None:
 
 
 def _new_line(env) -> None:
-    """add a new line to env.clean"""
+    """add a new line to env.clean and skip optional spacing argument"""
     env.clean.add("\n")
     env.source.index += 1
+    # Check for optional spacing argument: \\[spacing]
+    if env.source.text and env.source.text[0] == "[":
+        try:
+            env.source.move_index("]")
+        except ValueError:
+            # If no closing bracket found, just continue
+            pass
 
 
 def _square_equation(env) -> None:

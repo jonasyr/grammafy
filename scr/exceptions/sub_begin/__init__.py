@@ -32,7 +32,7 @@ def _enumerate(env) -> None:
         index_enum += 1
 
     env.source.add(new_text)
-    env.source.root.move_index("\\end{enumerate}")
+    env.source.head.root.move_index("\\end{enumerate}")
 
 
 def _itemize(env) -> None:
@@ -43,7 +43,7 @@ def _itemize(env) -> None:
     new_text = env.source.text[:i].replace("\\item", "-")
 
     env.source.add(new_text)
-    env.source.root.move_index("\\end{itemize}")
+    env.source.head.root.move_index("\\end{itemize}")
 
 
 def _curly_curly(env) -> None:
